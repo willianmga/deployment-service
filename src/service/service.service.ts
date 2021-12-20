@@ -1,21 +1,20 @@
-import {Service, ServiceType} from "./service.interface";
+import {Service} from "./service.interface";
+import {MongoServiceRepository} from "./mongo.service.repository";
 
 export class ServiceService {
 
+    serviceMongo: MongoServiceRepository;
+
+    constructor() {
+        this.serviceMongo = new MongoServiceRepository();
+    }
+
+    async insertService(service: Service): Promise<string> {
+        return this.serviceMongo.insertService(service);
+    };
+
     async getServices(): Promise<Service[]> {
-        return new Promise<Service[]>(resolve => {
-
-            const serviceExample: Service[] = [{
-                id: "123",
-                image: "img",
-                type: ServiceType.Deployment,
-                createdAt: Date.now().toString(),
-                cpu: 1,
-                memory: 512
-            }];
-
-            resolve(serviceExample);
-        });
+        return this.serviceMongo.getServices();
     };
 
 }
