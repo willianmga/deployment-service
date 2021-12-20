@@ -2,10 +2,10 @@ import {Service, ServiceType} from "./service.interface";
 
 export class ServiceService {
 
-    async getServices(): Promise<Array<Service>> {
-        return new Promise<Array<Service>>(resolve => {
+    async getServices(): Promise<Service[]> {
+        return new Promise<Service[]>(resolve => {
 
-            const serviceExample: Array<Service> = [{
+            const serviceExample: Service[] = [{
                 id: "123",
                 image: "img",
                 type: ServiceType.Deployment,
