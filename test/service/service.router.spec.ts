@@ -1,38 +1,29 @@
 import {describe} from "mocha";
 import {expect} from "chai";
 import request from "supertest";
-import {ExpressServer} from "../../src/express";
-import {InMemoryMongoConnection} from "../inmemory.mongo";
-import * as http from "http";
-import {logger} from "../../src/logger";
+import expressServer from "../../src/express";
+import inMemoryMongoServer from "../inmemory.mongo.server";
+import mongoConnection from "../../src/mongo";
 
 describe("Api tests", () => {
 
-    let inMemoryMongoConnection: InMemoryMongoConnection;
-    let expressApp: http.Server;
-
     before(async () => {
-        inMemoryMongoConnection = new InMemoryMongoConnection();
-        await inMemoryMongoConnection.connect();
-        expressApp = await ExpressServer.start();
+        await inMemoryMongoServer.connect();
+        await expressServer.start();
     });
 
-    after((done) => {
-        inMemoryMongoConnection.stop()
-            .then(() => {
-                expressApp.close(() => {
-                    logger.info("closed");
-                    done();
-                });
-            });
+    after(async () => {
+        await mongoConnection.closeConnection();
+        await inMemoryMongoServer.stop();
+        await expressServer.stop();
     })
 
     afterEach(async () =>{
-        await inMemoryMongoConnection.cleanUp();
+        //await inMemoryMongoConnection.cleanUp();
     })
 
     it("should return empty services", async () => {
-        return request(expressApp)
+        return request("http://localhost:8080")
             .get("/service")
             .expect('Content-type', /json/)
             .expect(200);

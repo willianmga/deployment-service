@@ -1,38 +1,26 @@
 import {Db, MongoClient} from "mongodb";
-import {MongoMemoryServer} from "mongodb-memory-server";
 import {logger} from "./logger";
 
 class MongoConnection {
 
     private database: Db;
     private mongoClient: MongoClient;
-    private inMemoryServer: MongoMemoryServer;
 
     async connect() {
 
-        let mongoUri: string = process.env.MONGO_URI;
+        const MONGO_URI: string = process.env.MONGO_URI;
+        const MONGO_DATABASE: string = process.env.MONGO_DATABASE;
 
-        if (process.env.NODE_ENV === "development") {
-            try {
-                this.inMemoryServer = await MongoMemoryServer.create();
-                mongoUri = this.inMemoryServer.getUri();
-                logger.info("Started in memory mongodb instance");
-            } catch (error) {
-                logger.fatal(`Couldn't start in memory mongodb instance. Reason: ${error}. Exiting application`);
-                process.exit(1);
-            }
-        }
-
-        if (!mongoUri) {
+        if (!MONGO_DATABASE || !MONGO_DATABASE) {
             logger.fatal("Couldn't find mongo connection parameters. Exiting application");
             process.exit(1);
         }
 
         try {
-            this.mongoClient = new MongoClient(mongoUri);
+            this.mongoClient = new MongoClient(MONGO_URI);
             await this.mongoClient.connect();
-            this.database = this.mongoClient.db("deployment-service");
-            logger.info(`Connected to mongodb`);
+            this.database = this.mongoClient.db(MONGO_DATABASE);
+            logger.info("Connected to mongodb database");
         } catch (error) {
             logger.fatal("Couldn't connect to mongo using provided MONGO_URI. Exiting application");
             process.exit(1);
@@ -42,9 +30,9 @@ class MongoConnection {
     async closeConnection() {
         if (this.mongoClient) {
             await this.mongoClient.close();
-        }
-        if (this.inMemoryServer) {
-            await this.inMemoryServer.stop();
+            this.mongoClient = undefined;
+            this.database = undefined;
+            logger.info("Disconnected from mongodb database")
         }
     }
 

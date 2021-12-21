@@ -3,10 +3,13 @@ import helmet from "helmet";
 import {serviceRouter} from "./service/service.router";
 import pinoHttp from "pino-http";
 import {logger} from "./logger";
+import http from "http";
 
-export class ExpressServer {
+class ExpressServer {
 
-    static async start(): Promise<any> {
+    private expressApp: http.Server;
+
+    async start() {
 
         const port = ExpressServer.getPort();
         const app = express();
@@ -16,10 +19,18 @@ export class ExpressServer {
         app.use(pinoHttp({logger}));
         app.use("/service", serviceRouter);
 
-        return new Promise<any>(resolve => {
-            const server = app.listen(port, () => {
-                logger.info(`Server started on port ${port}`);
-                resolve(server);
+        this.expressApp = app.listen(port, () => {
+            logger.info(`Server started on port ${port}`);
+        });
+
+    }
+
+    async stop(): Promise<void> {
+        return new Promise<void>(resolve => {
+            this.expressApp.close(() => {
+                logger.info("Server stopped");
+                resolve();
+                this.expressApp = undefined;
             });
         })
     }
@@ -33,3 +44,7 @@ export class ExpressServer {
     }
 
 }
+
+const expressServer: ExpressServer = new ExpressServer();
+
+export default expressServer;

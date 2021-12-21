@@ -2,7 +2,7 @@ import {MongoMemoryServer} from "mongodb-memory-server";
 import {logger} from "../src/logger";
 import mongoConnection from "../src/mongo";
 
-export class InMemoryMongoConnection {
+class InMemoryMongoServer {
 
     private mongoMemoryServer: MongoMemoryServer;
 
@@ -10,6 +10,7 @@ export class InMemoryMongoConnection {
         try {
             this.mongoMemoryServer = await MongoMemoryServer.create();
             process.env.MONGO_URI = this.mongoMemoryServer.getUri();
+            process.env.MONGO_DATABASE = "deployment-service";
             logger.info("Started in memory mongodb instance");
         } catch (error) {
             logger.fatal(`Couldn't start in memory mongodb instance. Reason: ${error}. Exiting application`);
@@ -36,3 +37,7 @@ export class InMemoryMongoConnection {
     }
 
 }
+
+const inMemoryMongoServer: InMemoryMongoServer = new InMemoryMongoServer();
+
+export default inMemoryMongoServer;

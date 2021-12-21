@@ -1,11 +1,11 @@
 import * as dotenv from "dotenv";
 import mongoConnection from "./mongo";
-import {ExpressServer} from "./express";
+import expressServer from "./express";
 
 async function startServer() {
     dotenv.config();
     await mongoConnection.connect();
-    ExpressServer.start();
+    await expressServer.start();
 }
 
 (startServer());
