@@ -1,22 +1,12 @@
-import express from "express";
 import * as dotenv from "dotenv";
-import helmet from "helmet";
-import {serviceRouter} from "./service/service.router";
+import mongoConnection from "./mongo";
+import expressServer from "./express";
 
-dotenv.config();
-
-if (!process.env.SERVER_PORT) {
-    process.exit(1);
+async function startServer() {
+    dotenv.config();
+    await mongoConnection.connect();
+    await expressServer.start();
 }
 
-const PORT: number = parseInt(process.env.SERVER_PORT as string, 10);
-const app = express();
+(startServer());
 
-app.use(helmet());
-app.use(express.json());
-app.use("/service", serviceRouter);
-
-app.listen(PORT, () => {
-    // tslint:disable-next-line:no-console
-    console.log(`Server started on port ${PORT}`);
-});
