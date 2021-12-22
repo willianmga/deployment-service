@@ -24,7 +24,7 @@ describe("Api tests", () => {
 
     it("should return empty services", async () => {
         return request("http://localhost:8080")
-            .get("/service")
+            .get("/v1/services")
             .expect('Content-type', /json/)
             .expect(200);
     });

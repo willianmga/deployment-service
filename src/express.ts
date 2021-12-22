@@ -17,7 +17,7 @@ class ExpressServer {
         app.use(helmet());
         app.use(express.json());
         app.use(pinoHttp({logger}));
-        app.use("/service", serviceRouter);
+        app.use("/v1/services", serviceRouter);
 
         this.expressApp = app.listen(port, () => {
             logger.info(`Server started on port ${port}`);
