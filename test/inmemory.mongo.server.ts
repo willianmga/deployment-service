@@ -42,7 +42,9 @@ class InMemoryMongoServer {
         try {
             Object
                 .values(ApiMongoCollections)
-                .forEach(collectionName => this.mongoDatabase.dropCollection(collectionName));
+                .forEach(async (collectionName) => {
+                    await this.mongoDatabase.dropCollection(collectionName);
+                });
         } catch (error) {
             logger.fatal("Failed to clean up mongodb state.");
         }
