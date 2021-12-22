@@ -4,7 +4,6 @@ import {ServiceService} from "./service.service";
 import {ApiErrorType, ApiResponseMessages, ApiValidationError} from "./error.interface";
 import {ServiceType, SortServicesBy} from "./service.interface";
 import {ApiResponseUtils} from "../express/api.response.utils";
-import {ValidationError} from "express-validator/src/base";
 
 export const serviceRouter = express.Router();
 const serviceService = new ServiceService();
@@ -17,7 +16,7 @@ serviceRouter.post("/", validateCreateServiceRequest(), async (req: Request, res
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
-        const validationErrors: ApiValidationError[] = mapToApiValidationError(errors.array());
+        const validationErrors: ApiValidationError[] = ApiResponseUtils.mapToApiValidationError(errors.array());
         return res.status(400).json(ApiResponseUtils.badRequestResponse(validationErrors));
     }
 
@@ -72,7 +71,7 @@ serviceRouter.get("/", validateGetServicesRequest(), async (req: Request, res: R
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
-        const validationErrors: ApiValidationError[] = mapToApiValidationError(errors.array());
+        const validationErrors: ApiValidationError[] = ApiResponseUtils.mapToApiValidationError(errors.array());
         return res.status(400).json(ApiResponseUtils.badRequestResponse(validationErrors));
     }
 
@@ -81,11 +80,6 @@ serviceRouter.get("/", validateGetServicesRequest(), async (req: Request, res: R
         .then(result => res.status(200).json(ApiResponseUtils.successResponse(result)))
         .catch(error => res.status(500).json(ApiResponseUtils.errorResponse(ApiResponseMessages.UNEXPECTED_ERROR)));
 });
-
-function mapToApiValidationError(validationErrors: ValidationError[]): ApiValidationError[] {
-    return validationErrors
-        .map(error => {return {fieldName: error.param, message: error.msg}});
-}
 
 function validateIdOnPath() {
     return [
