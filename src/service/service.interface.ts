@@ -3,6 +3,11 @@ export enum ServiceType {
     StatefulSet = 'StatefulSet'
 }
 
+export enum DeploymentStatus {
+    PENDING = 'PENDING',
+    RUNNING = 'RUNNING',
+}
+
 export interface Service {
     id: string;
     image: string;
@@ -10,6 +15,7 @@ export interface Service {
     createdAt: string;
     cpu?: number;
     memory?: number
+    deploymentStatus?: DeploymentStatus
 }
 
 export interface ServiceMongo {

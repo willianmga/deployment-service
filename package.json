@@ -5,10 +5,10 @@
   "main": "dist/app.js",
   "scripts": {
     "prebuild": "tslint -c tslint.json -p tsconfig.json --fix",
-    "build": "tsc",
+    "build": "tsc && npm run test",
     "prestart": "npm run build",
     "start": "node .",
-    "test": "env=NODE_ENV=dev mocha"
+    "test": "mocha"
   },
   "author": "willianmga",
   "license": "ISC",
@@ -17,12 +17,14 @@
     "@types/dotenv": "^8.2.0",
     "@types/express": "^4.17.13",
     "@types/helmet": "^4.0.0",
+    "@types/md5": "^2.3.1",
     "@types/mocha": "^9.0.0",
     "@types/mongodb": "^4.0.7",
     "@types/node": "^14.18.1",
     "@types/pino": "^7.0.5",
     "@types/pino-http": "^5.8.1",
     "@types/supertest": "^2.0.11",
+    "@types/uuid": "^8.3.3",
     "chai": "^4.3.4",
     "mocha": "^9.1.3",
     "mongodb-memory-server": "^8.0.4",
@@ -37,8 +39,11 @@
     "express": "^4.17.2",
     "express-validator": "^6.14.0",
     "helmet": "^4.6.0",
+    "lc-interviews": "^1.0.1",
+    "md5": "^2.3.0",
     "mongodb": "^4.2.2",
     "pino": "^7.5.1",
-    "pino-http": "^6.4.0"
+    "pino-http": "^6.4.0",
+    "uuid": "^8.3.2"
   }
 }
