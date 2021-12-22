@@ -1,9 +1,10 @@
 import express, {Request, Response} from "express";
-import {body, param, validationResult} from "express-validator";
+import {body, param, query, validationResult} from "express-validator";
 import {ServiceService} from "./service.service";
-import {ApiErrorType, ApiResponseMessages, ValidationError, ValidationErrorType} from "./error.interface";
-import {ServiceType} from "./service.interface";
+import {ApiErrorType, ApiResponseMessages, ApiValidationError} from "./error.interface";
+import {ServiceType, SortServicesBy} from "./service.interface";
 import {ApiResponseUtils} from "../express/api.response.utils";
+import {ValidationError} from "express-validator/src/base";
 
 export const serviceRouter = express.Router();
 const serviceService = new ServiceService();
@@ -16,22 +17,18 @@ serviceRouter.post("/", validateCreateServiceRequest(), async (req: Request, res
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
-        return res.status(400).json(ApiResponseUtils.badRequestResponse(errors.array()));
+        const validationErrors: ApiValidationError[] = mapToApiValidationError(errors.array());
+        return res.status(400).json(ApiResponseUtils.badRequestResponse(validationErrors));
     }
 
     serviceService
         .createService(req.body)
         .then(result => res.status(201).json(ApiResponseUtils.successResponse({id: result})))
         .catch(error => {
-
-            if (error === ApiErrorType.DB_ERROR) {
-                const validationError: ValidationError = {
-                    fieldName: "id",
-                    errorType: ValidationErrorType.ID_IN_USE
-                };
+            if (error === ApiErrorType.ID_IN_USE) {
+                const validationError: ApiValidationError = {fieldName: "id", message: "id already in use"};
                 return res.status(400).json(ApiResponseUtils.badRequestResponse([validationError]))
             }
-
             res.status(500).json(ApiResponseUtils.errorResponse(ApiResponseMessages.UNEXPECTED_ERROR))
         });
 });
@@ -52,16 +49,6 @@ serviceRouter.post("/deploy/:id", validateIdOnPath(), async (req: Request, res: 
 });
 
 /**
- * Get Services
- */
-serviceRouter.get("/", async (req: Request, res: Response) => {
-    serviceService
-        .getServices()
-        .then(result => res.status(200).json(ApiResponseUtils.successResponse(result)))
-        .catch(error => res.status(500).json(ApiResponseUtils.errorResponse(ApiResponseMessages.UNEXPECTED_ERROR)));
-});
-
-/**
  * Get Service by Id
  */
 serviceRouter.get("/:id", validateIdOnPath(), async (req: Request, res: Response) => {
@@ -76,9 +63,31 @@ serviceRouter.get("/:id", validateIdOnPath(), async (req: Request, res: Response
         });
 });
 
+/**
+ * Get Services.
+ * query param: sort (optional, values [CREATION_TIME, IMAGE])
+ */
+serviceRouter.get("/", validateGetServicesRequest(), async (req: Request, res: Response) => {
+    serviceService
+        .getServices(req.query.sort)
+        .then(result => res.status(200).json(ApiResponseUtils.successResponse(result)))
+        .catch(error => res.status(500).json(ApiResponseUtils.errorResponse(ApiResponseMessages.UNEXPECTED_ERROR)));
+});
+
+function mapToApiValidationError(validationErrors: ValidationError[]): ApiValidationError[] {
+    return validationErrors
+        .map(error => {return {fieldName: error.param, message: error.msg}});
+}
+
 function validateIdOnPath() {
     return [
         param("id").notEmpty()
+    ];
+}
+
+function validateGetServicesRequest() {
+    return [
+        query("sort").optional().isIn(Object.values(SortServicesBy))
     ];
 }
 
@@ -89,6 +98,7 @@ function validateCreateServiceRequest() {
         body("type").notEmpty().isIn([ServiceType.Deployment, ServiceType.StatefulSet]),
         body("createdAt").notEmpty(),
         body("cpu").optional().isInt().isIn([1, 2, 3]),
-        body("memory").optional().isInt()
+        body("memory").optional().isInt(),
+        body("deploymentStatus").not().exists()
     ]
 }

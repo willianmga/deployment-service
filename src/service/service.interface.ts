@@ -1,3 +1,8 @@
+export enum SortServicesBy {
+    CREATION_TIME = 'CREATION_TIME',
+    IMAGE = 'IMAGE'
+}
+
 export enum ServiceType {
     Deployment = 'Deployment',
     StatefulSet = 'StatefulSet'
