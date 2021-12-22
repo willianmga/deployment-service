@@ -1,8 +1,9 @@
 import md5 from "md5";
 import {DeploymentLibrary} from "lc-interviews";
-import {Service} from "./service.interface";
+import {Service, SortServicesBy} from "./service.interface";
 import {MongoServiceRepository} from "./mongo.service.repository";
 import {logger} from "../logger";
+import {ApiErrorType} from "./error.interface";
 
 export class ServiceService {
 
@@ -13,23 +14,39 @@ export class ServiceService {
     }
 
     createService(service: Service): Promise<string> {
-        return this.serviceMongo.insertService(service);
+        return new Promise<string>((resolve, reject) => {
+            this.serviceMongo
+                .idInUse(service.id)
+                .then(idInUse => {
+                    if (!idInUse) {
+                        service.createdAt = Date.now().toString();
+                        return this.serviceMongo.insertService(service);
+                    } else {
+                        reject(ApiErrorType.ID_IN_USE);
+                    }
+                })
+                .then(serviceId => resolve(serviceId))
+                .catch(error => reject(error));
+        });
     };
 
     deployService(id: string): Promise<any> {
         return new Promise<any>((resolve, reject) => {
             this.getServiceById(id)
                 .then(service => {
+
                     this.startServiceDeployment(service)
-                        .then(() => logger.info(`Service with id ${md5(service.id)} deployed successfully.`));
+                        .then(() => logger.info(`Service with id ${md5(service.id)} deployed successfully.`))
+                        .catch(error => logger.error(`Failed to deploy service. Reason ${error}`));
+
                     resolve({status: "Deployment scheduled"});
                 })
                 .catch(error => reject(error));
         });
     };
 
-    getServices(): Promise<Array<Service>> {
-        return this.serviceMongo.getServices();
+    getServices(sort: any): Promise<Service[]> {
+        return this.serviceMongo.getServices(sort);
     };
 
     getServiceById(id: string): Promise<Service> {

@@ -1,6 +1,7 @@
 export enum ApiErrorType {
     NOT_FOUND = "NOT_FOUND",
-    DB_ERROR = "DB_ERROR"
+    DB_ERROR = "DB_ERROR",
+    ID_IN_USE = "ID_IN_USE"
 }
 
 export enum ValidationErrorType {
@@ -10,9 +11,9 @@ export enum ValidationErrorType {
     ID_IN_USE = "ID_IN_USE"
 }
 
-export interface ValidationError {
+export interface ApiValidationError {
     fieldName: string;
-    errorType: ValidationErrorType
+    message: string;
 }
 
 export enum ApiResponseMessages {

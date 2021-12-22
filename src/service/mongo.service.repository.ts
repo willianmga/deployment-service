@@ -1,8 +1,9 @@
-import {Service, ServiceMongo} from "./service.interface";
+import {Service, ServiceMongo, SortServicesBy} from "./service.interface";
 import mongoConnection from "../mongo";
-import {Collection, InsertOneResult, WithId} from "mongodb";
+import {Collection, InsertOneResult, Sort, WithId} from "mongodb";
 import {ApiErrorType} from "./error.interface";
 import {logger} from "../logger";
+import {ApiMongoCollections} from "../mongo/mongo.collections.enum";
 
 export class MongoServiceRepository {
 
@@ -19,10 +20,28 @@ export class MongoServiceRepository {
         });
     };
 
-    async getServices(): Promise<Array<Service>> {
-        return new Promise<Array<Service>>((resolve, reject) => {
+    async idInUse(id: string): Promise<boolean> {
+        return new Promise<boolean>((resolve, reject) => {
+            return this.getCollection()
+                .findOne<ServiceMongo>({_id: id}, {projection: {_id: 1}})
+                .then(idFound => resolve(!!idFound))
+                .catch((error) => {
+                    logger.error(`Failed to retrieve by id from mongodb. Error: ${error}`)
+                    reject(ApiErrorType.DB_ERROR)
+                })
+        });
+    }
+
+    async getServices(sortBy: any): Promise<Service[]> {
+        return new Promise<Service[]>((resolve, reject) => {
+
+            const sortFields: Sort = (sortBy === SortServicesBy.IMAGE.toString())
+                ? {image: 1, createdAt: 1}
+                : {createdAt: 1};
+
             return this.getCollection()
                 .find()
+                .sort(sortFields)
                 .toArray()
                 .then((results: WithId<ServiceMongo>[]) => resolve(this.mapToServicesArray(results)))
                 .catch((error) => {
@@ -78,7 +97,7 @@ export class MongoServiceRepository {
     private getCollection(): Collection<ServiceMongo> {
         return  mongoConnection
             .getDatabase()
-            .collection("services");
+            .collection(ApiMongoCollections.SERVICES);
     }
 
 }
