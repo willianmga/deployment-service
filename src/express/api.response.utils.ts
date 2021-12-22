@@ -1,7 +1,13 @@
-import {ApiResponse, ApiResponseMessages} from "../service/error.interface";
+import {ApiResponse, ApiResponseMessages, ApiValidationError} from "../service/error.interface";
 import {v4 as uuid} from "uuid";
+import {ValidationError} from "express-validator/src/base";
 
 export class ApiResponseUtils {
+
+    static mapToApiValidationError(validationErrors: ValidationError[]): ApiValidationError[] {
+        return validationErrors
+            .map(error => {return {fieldName: error.param, message: error.msg}});
+    }
 
     static successResponse(data: any): ApiResponse {
         return {

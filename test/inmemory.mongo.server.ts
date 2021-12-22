@@ -3,6 +3,8 @@ import {logger} from "../src/logger";
 import mongoConnection from "../src/mongo";
 import {Db, MongoClient} from "mongodb";
 import {ApiMongoCollections} from "../src/mongo/mongo.collections.enum";
+import {UserMongo, UserRole, UserStatus} from "../src/user/user.interfaces";
+import {HashService} from "../src/session/hash.service";
 
 class InMemoryMongoServer {
 
@@ -30,15 +32,19 @@ class InMemoryMongoServer {
     async connect() {
         if (!this.mongoMemoryServer) {
             await this.start()
+            await mongoConnection.connect();
+        } else {
+            logger.error("In memory mongodb instance is already running");
         }
-        await mongoConnection.connect();
     }
 
     async cleanUp() {
         try {
             Object
                 .values(ApiMongoCollections)
-                .forEach(collectionName => this.mongoDatabase.dropCollection(collectionName));
+                .forEach(async (collectionName) => {
+                    await this.mongoDatabase.dropCollection(collectionName);
+                });
         } catch (error) {
             logger.fatal("Failed to clean up mongodb state.");
         }
@@ -48,8 +54,45 @@ class InMemoryMongoServer {
         if (this.mongoMemoryServer) {
             await this.mongoClient.close();
             await this.mongoMemoryServer.stop();
+            this.mongoMemoryServer = undefined;
             logger.info("stopped in memory mongodb instance");
         }
+    }
+
+    async loadData() {
+        await this.loadUsersData();
+    }
+
+    async loadUsersData() {
+
+        const hashService: HashService = new HashService();
+
+        const userAdmin: UserMongo = {
+            _id: "e1fced1f-44a6-4de1-aa85-e6e4ebb88db0",
+            username: "admin",
+            password: hashService.hash("strongpassword"),
+            role: UserRole.ADMIN,
+            status: UserStatus.ACTIVE
+        };
+
+        const userContributor: UserMongo = {
+            _id: "30c3801a-191a-4059-89be-336d1bec35a9",
+            username: "contributor",
+            password: hashService.hash("evenstrongerpassword"),
+            role: UserRole.CONTRIBUTOR,
+            status: UserStatus.ACTIVE
+        };
+
+        const userGuest: UserMongo = {
+            _id: "60cc8222-24f0-40e0-8ff2-1c5b259cfa7c",
+            username: "guest",
+            password: hashService.hash("password"),
+            role: UserRole.GUEST,
+            status: UserStatus.ACTIVE
+        };
+
+        const users: Array<UserMongo> = [userAdmin, userContributor, userGuest];
+        await this.mongoDatabase.collection<UserMongo>(ApiMongoCollections.USERS).insertMany(users);
     }
 
 }

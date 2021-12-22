@@ -1,7 +1,8 @@
 export enum ApiErrorType {
     NOT_FOUND = "NOT_FOUND",
     DB_ERROR = "DB_ERROR",
-    ID_IN_USE = "ID_IN_USE"
+    ID_IN_USE = "ID_IN_USE",
+    INVALID_CREDENTIALS = "INVALID_CREDENTIALS"
 }
 
 export enum ValidationErrorType {

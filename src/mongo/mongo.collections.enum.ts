@@ -1,3 +1,5 @@
 export enum ApiMongoCollections {
-    SERVICES = "services"
+    SERVICES = "services",
+    USERS = "users",
+    SESSIONS = "sessions"
 }

@@ -1,8 +1,9 @@
 import express from "express";
 import helmet from "helmet";
-import {serviceRouter} from "./service/service.router";
+import {serviceRouter} from "../service/service.router";
+import {sessionRouter} from "../session/session.router";
 import pinoHttp from "pino-http";
-import {logger} from "./logger";
+import {logger} from "../logger";
 import http from "http";
 
 class ExpressServer {
@@ -18,6 +19,7 @@ class ExpressServer {
         app.use(express.json());
         app.use(pinoHttp({logger}));
         app.use("/v1/services", serviceRouter);
+        app.use("/v1/sessions", sessionRouter);
 
         this.expressApp = app.listen(port, () => {
             logger.info(`Server started on port ${port}`);

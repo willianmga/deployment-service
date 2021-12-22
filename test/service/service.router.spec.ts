@@ -2,7 +2,7 @@ import {describe} from "mocha";
 import {expect} from "chai";
 import request from "supertest";
 import {v4 as uuid} from "uuid";
-import expressServer from "../../src/express";
+import expressServer from "../../src/express/express.server";
 import inMemoryMongoServer from "../inmemory.mongo.server";
 import mongoConnection from "../../src/mongo";
 import {DeploymentStatus, Service, ServiceType} from "../../src/service/service.interface";
