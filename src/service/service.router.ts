@@ -68,6 +68,14 @@ serviceRouter.get("/:id", validateIdOnPath(), async (req: Request, res: Response
  * query param: sort (optional, values [CREATION_TIME, IMAGE])
  */
 serviceRouter.get("/", validateGetServicesRequest(), async (req: Request, res: Response) => {
+
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+        const validationErrors: ApiValidationError[] = mapToApiValidationError(errors.array());
+        return res.status(400).json(ApiResponseUtils.badRequestResponse(validationErrors));
+    }
+
     serviceService
         .getServices(req.query.sort)
         .then(result => res.status(200).json(ApiResponseUtils.successResponse(result)))

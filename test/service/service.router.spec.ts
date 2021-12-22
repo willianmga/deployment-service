@@ -199,6 +199,23 @@ describe("Services Api tests", () => {
             return sendGetServicesRequest("?sort=IMAGE", [expectedThirdService, expectedFirstService, expectedSecondService]);
         })
 
+        it("should return bad request when trying to sort by invalid parameter", async () => {
+
+            const expectedValidationErrors: Array<ApiValidationError> = [{fieldName: "sort", message: "Invalid value"}];
+
+            return request(API_URL)
+                .get(SERVICES_URI + "?sort=something-else")
+                .expect('Content-type', /json/)
+                .expect(400)
+                .then((response) => {
+                    const body: ApiResponse = response.body;
+                    assertBadRequestApiResponse(body);
+
+                    const validationErrors: Array<ApiValidationError> = body.response;
+                    assertValidationErrors(validationErrors, expectedValidationErrors);
+                });
+        })
+
     })
 
     describe("POST /v1/services/deploy/:id route tests", () => {
@@ -286,7 +303,7 @@ describe("Services Api tests", () => {
                 assertBadRequestApiResponse(body);
 
                 const validationErrors: Array<ApiValidationError> = body.response;
-                assertBadRequestCreateService(validationErrors, expectedValidationErrors);
+                assertValidationErrors(validationErrors, expectedValidationErrors);
             });
     }
 
@@ -345,7 +362,7 @@ describe("Services Api tests", () => {
         expect(service.memory).to.equal(expectedService.memory);
     }
 
-    function assertBadRequestCreateService(validationErrors: Array<ApiValidationError>,
+    function assertValidationErrors(validationErrors: Array<ApiValidationError>,
                                            expectedValidationErrors: Array<ApiValidationError>) {
         expectedValidationErrors.forEach((error, index) => {
             const validationError = validationErrors[index];
