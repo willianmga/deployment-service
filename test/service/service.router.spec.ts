@@ -6,7 +6,7 @@ import expressServer from "../../src/express/express.server";
 import inMemoryMongoServer from "../inmemory.mongo.server";
 import mongoConnection from "../../src/mongo";
 import {DeploymentStatus, Service, ServiceType} from "../../src/service/service.interface";
-import {ApiResponse, ApiResponseMessages, ApiValidationError} from "../../src/service/error.interface";
+import {ApiResponse, ApiResponseMessage, ApiValidationError} from "../../src/service/error.interface";
 import {ServiceRouterTestData} from "./service.router.test.data";
 
 describe("Services Api tests", () => {
@@ -379,15 +379,15 @@ describe("Services Api tests", () => {
 
 
     function assertSuccessApiResponse(apiResponse: ApiResponse) {
-        assertApiResponse(ApiResponseMessages.SUCCESS, apiResponse);
+        assertApiResponse(ApiResponseMessage.SUCCESS, apiResponse);
     }
 
     function assertBadRequestApiResponse(apiResponse: ApiResponse) {
-        assertApiResponse(ApiResponseMessages.BAD_REQUEST, apiResponse);
+        assertApiResponse(ApiResponseMessage.BAD_REQUEST, apiResponse);
     }
 
     function assertNotFoundApiResponse(apiResponse: ApiResponse) {
-        assertApiResponse(ApiResponseMessages.NOT_FOUND, apiResponse);
+        assertApiResponse(ApiResponseMessage.NOT_FOUND, apiResponse);
     }
 
     function assertApiResponse(expectedMessage: string, apiResponse: ApiResponse) {

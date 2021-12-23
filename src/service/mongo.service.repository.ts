@@ -32,7 +32,7 @@ export class MongoServiceRepository {
         });
     }
 
-    async getServices(sortBy: any): Promise<Service[]> {
+    async getServices(sortBy: any): Promise<Array<Service>> {
         return new Promise<Service[]>((resolve, reject) => {
 
             const sortFields: Sort = (sortBy === SortServicesBy.IMAGE.toString())
@@ -68,7 +68,7 @@ export class MongoServiceRepository {
         });
     };
 
-    private mapToServicesArray(results: WithId<ServiceMongo>[]): Service[] {
+    private mapToServicesArray(results: WithId<ServiceMongo>[]): Array<Service> {
         return results.map(serviceMongo => this.mapToService(serviceMongo));
     }
 
