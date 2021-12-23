@@ -1,4 +1,4 @@
-import {ApiValidationError} from "../../src/service/error.interface";
+import {ApiResponse, ApiValidationError} from "../../src/service/error.interface";
 import {expect} from "chai";
 
 export class TestsAssertionUtils {
@@ -11,6 +11,12 @@ export class TestsAssertionUtils {
             expect(validationError.fieldName).to.equal(expectedValidationError.fieldName);
             expect(validationError.message).to.equal(expectedValidationError.message);
         });
+    }
+
+    static assertApiResponse(expectedMessage: string, apiResponse: ApiResponse) {
+        expect(apiResponse.message).to.equal(expectedMessage);
+        expect(apiResponse.transactionId).to.not.empty;
+        expect(apiResponse.timestamp).to.not.empty;
     }
 
 }

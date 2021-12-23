@@ -20,7 +20,7 @@ class InMemoryMongoServer {
             this.mongoClient = new MongoClient(process.env.MONGO_URI);
             await this.mongoClient.connect();
             this.mongoDatabase = this.mongoClient.db(process.env.MONGO_DATABASE);
-
+            await this.loadUsersData();
             logger.info("Started and connected to in memory mongodb instance");
         } catch (error) {
             logger.fatal(`Couldn't start in memory mongodb instance. Reason: ${error}. Exiting application`);
@@ -41,9 +41,8 @@ class InMemoryMongoServer {
         try {
             Object
                 .values(ApiMongoCollections)
-                .forEach(async (collectionName) => {
-                    await this.mongoDatabase.dropCollection(collectionName);
-                });
+                .filter(collection => collection !== ApiMongoCollections.USERS)
+                .forEach(async (collectionName) => await this.mongoDatabase.dropCollection(collectionName));
         } catch (error) {
             logger.fatal("Failed to clean up mongodb state.");
         }
@@ -56,10 +55,6 @@ class InMemoryMongoServer {
             this.mongoMemoryServer = undefined;
             logger.info("stopped in memory mongodb instance");
         }
-    }
-
-    async loadData() {
-        await this.loadUsersData();
     }
 
     async loadUsersData() {

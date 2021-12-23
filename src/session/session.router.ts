@@ -26,6 +26,7 @@ sessionRouter.post("/login", validateLoginRequest(), async (req: Request, res: R
             if (error === ApiErrorType.INVALID_CREDENTIALS) {
                 return res.status(401).json(ApiResponseUtils.badRequestResponse({message: "Invalid Credentials"}))
             }
+            logger.error(`Error happened: ${error}`);
             res.status(500).json(ApiResponseUtils.errorResponse(ApiResponseMessage.UNEXPECTED_ERROR))
         });
 });

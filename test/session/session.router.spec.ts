@@ -8,6 +8,7 @@ import {ApiResponse, ApiResponseMessage, ApiValidationError} from "../../src/ser
 import {LoginRequest} from "../../src/session/session.interfaces";
 import {JwtTokenDetails} from "../../src/session/jwt.interfaces";
 import {TestsAssertionUtils} from "../utils/tests.assertion.utils";
+import {AuthenticationUtils} from "./authentication.utils";
 
 describe("Session Api tests", () => {
 
@@ -17,7 +18,6 @@ describe("Session Api tests", () => {
 
     before(async () => {
         await inMemoryMongoServer.connect();
-        await inMemoryMongoServer.loadUsersData();
         await expressServer.start();
     });
 
@@ -35,7 +35,7 @@ describe("Session Api tests", () => {
     describe("POST /v1/sessions/login route tests", () => {
 
         it("should login successfully", async () => {
-            return sendLoginRequest({username: "admin", password: "strongpassword"});
+            return sendLoginRequest(AuthenticationUtils.ADMIN_USER_CREDENTIALS);
         });
 
         it("should fail to login with invalid credentials and 401 status", async () => {
