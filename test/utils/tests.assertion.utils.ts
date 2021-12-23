@@ -1,7 +1,19 @@
-import {ApiResponse, ApiValidationError} from "../../src/service/error.interface";
+import {ApiResponse, ApiResponseMessage, ApiValidationError} from "../../src/service/error.interface";
 import {expect} from "chai";
 
 export class TestsAssertionUtils {
+
+    static assertSuccessApiResponse(apiResponse: ApiResponse) {
+        TestsAssertionUtils.assertApiResponse(ApiResponseMessage.SUCCESS, apiResponse);
+    }
+
+    static assertBadRequestApiResponse(apiResponse: ApiResponse) {
+        TestsAssertionUtils.assertApiResponse(ApiResponseMessage.BAD_REQUEST, apiResponse);
+    }
+
+    static assertNotFoundApiResponse(apiResponse: ApiResponse) {
+        TestsAssertionUtils.assertApiResponse(ApiResponseMessage.NOT_FOUND, apiResponse);
+    }
 
     static assertValidationErrors(validationErrors: Array<ApiValidationError>,
                                   expectedValidationErrors: Array<ApiValidationError>) {

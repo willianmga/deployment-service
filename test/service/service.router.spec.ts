@@ -10,6 +10,7 @@ import {ApiResponse, ApiResponseMessage, ApiValidationError} from "../../src/ser
 import {ServiceRouterTestData} from "./service.router.test.data";
 import {AuthenticationUtils} from "../session/authentication.utils";
 import configLoader from "../../src/config/config.loader";
+import {TestsAssertionUtils} from "../utils/tests.assertion.utils";
 
 describe("Services Api tests", () => {
 
@@ -31,7 +32,6 @@ describe("Services Api tests", () => {
     });
 
     after(async () => {
-        //await AuthenticationUtils.logoff(JWT_TOKEN);
         await mongoConnection.closeConnection();
         await inMemoryMongoServer.stop();
         await expressServer.stop();
@@ -62,7 +62,7 @@ describe("Services Api tests", () => {
                 .expect(403)
                 .expect('Content-type', /json/)
                 .then((response) => {
-                    assertApiResponse(ApiResponseMessage.FORBIDDEN, response.body)
+                    TestsAssertionUtils.assertApiResponse(ApiResponseMessage.FORBIDDEN, response.body)
                 });
         });
 
@@ -172,7 +172,7 @@ describe("Services Api tests", () => {
                 .expect(404)
                 .expect('Content-type', /json/)
                 .then((response) => {
-                    assertNotFoundApiResponse(response.body);
+                    TestsAssertionUtils.assertNotFoundApiResponse(response.body);
                 });
         });
 
@@ -198,7 +198,7 @@ describe("Services Api tests", () => {
                 .expect(200)
                 .then((response) => {
                     const body: ApiResponse = response.body;
-                    assertSuccessApiResponse(body);
+                    TestsAssertionUtils.assertSuccessApiResponse(body);
 
                     const services: Array<Service> = body.response;
                     expect(services.length).to.equal(1);
@@ -222,7 +222,7 @@ describe("Services Api tests", () => {
                 .expect(200)
                 .then((response) => {
                     const body: ApiResponse = response.body;
-                    assertSuccessApiResponse(body);
+                    TestsAssertionUtils.assertSuccessApiResponse(body);
 
                     const services: Array<Service> = body.response;
                     expect(services.length).to.equal(1);
@@ -246,7 +246,7 @@ describe("Services Api tests", () => {
                 .expect(200)
                 .then((response) => {
                     const body: ApiResponse = response.body;
-                    assertSuccessApiResponse(body);
+                    TestsAssertionUtils.assertSuccessApiResponse(body);
 
                     const services: Array<Service> = body.response;
                     expect(services.length).to.equal(1);
@@ -278,7 +278,7 @@ describe("Services Api tests", () => {
                 .expect(200)
                 .then((response) => {
                     const body: ApiResponse = response.body;
-                    assertSuccessApiResponse(body);
+                    TestsAssertionUtils.assertSuccessApiResponse(body);
 
                     const services: Array<Service> = body.response;
                     expect(services.length).to.equal(3);
@@ -319,10 +319,10 @@ describe("Services Api tests", () => {
                 .expect(400)
                 .then((response) => {
                     const body: ApiResponse = response.body;
-                    assertBadRequestApiResponse(body);
+                    TestsAssertionUtils.assertBadRequestApiResponse(body);
 
                     const validationErrors: Array<ApiValidationError> = body.response;
-                    assertValidationErrors(validationErrors, expectedValidationErrors);
+                    TestsAssertionUtils.assertValidationErrors(validationErrors, expectedValidationErrors);
                 });
         })
 
@@ -387,7 +387,7 @@ describe("Services Api tests", () => {
                 .expect(404)
                 .expect('Content-type', /json/)
                 .then((response) => {
-                    assertNotFoundApiResponse(response.body);
+                    TestsAssertionUtils.assertNotFoundApiResponse(response.body);
                 });
         })
 
@@ -416,7 +416,7 @@ describe("Services Api tests", () => {
             .expect('Content-type', /json/)
             .then((response) => {
                 const body: ApiResponse = response.body;
-                assertSuccessApiResponse(body);
+                TestsAssertionUtils.assertSuccessApiResponse(body);
 
                 expect(body.response.id).to.equal(service.id);
             });
@@ -431,10 +431,10 @@ describe("Services Api tests", () => {
             .expect('Content-type', /json/)
             .then((response) => {
                 const body: ApiResponse = response.body;
-                assertBadRequestApiResponse(body);
+                TestsAssertionUtils.assertBadRequestApiResponse(body);
 
                 const validationErrors: Array<ApiValidationError> = body.response;
-                assertValidationErrors(validationErrors, expectedValidationErrors);
+                TestsAssertionUtils.assertValidationErrors(validationErrors, expectedValidationErrors);
             });
     }
 
@@ -446,7 +446,7 @@ describe("Services Api tests", () => {
             .expect('Content-type', /json/)
             .then((response) => {
                 const body: ApiResponse = response.body;
-                assertSuccessApiResponse(body);
+                TestsAssertionUtils.assertSuccessApiResponse(body);
 
                 expect(body.response.status).to.equal('Deployment scheduled');
             });
@@ -459,7 +459,7 @@ describe("Services Api tests", () => {
             .expect(403)
             .expect('Content-type', /json/)
             .then((response) => {
-                assertApiResponse(ApiResponseMessage.FORBIDDEN, response.body);
+                TestsAssertionUtils.assertApiResponse(ApiResponseMessage.FORBIDDEN, response.body);
             });
     }
 
@@ -471,7 +471,7 @@ describe("Services Api tests", () => {
             .expect('Content-type', /json/)
             .then((response) => {
                 const body: ApiResponse = response.body;
-                assertSuccessApiResponse(body);
+                TestsAssertionUtils.assertSuccessApiResponse(body);
 
                 const service: Service = body.response;
                 assertServiceById(service, expectedService);
@@ -486,7 +486,7 @@ describe("Services Api tests", () => {
             .expect(200)
             .then((response) => {
                 const body: ApiResponse = response.body;
-                assertSuccessApiResponse(body);
+                TestsAssertionUtils.assertSuccessApiResponse(body);
 
                 const services: Array<Service> = body.response;
                 expect(services.length).to.equal(expectedServices.length);
@@ -506,37 +506,9 @@ describe("Services Api tests", () => {
         expect(service.memory).to.equal(expectedService.memory);
     }
 
-    function assertValidationErrors(validationErrors: Array<ApiValidationError>,
-                                           expectedValidationErrors: Array<ApiValidationError>) {
-        expectedValidationErrors.forEach((error, index) => {
-            const validationError = validationErrors[index];
-            const expectedValidationError = expectedValidationErrors[index];
-            expect(validationError.fieldName).to.equal(expectedValidationError.fieldName);
-            expect(validationError.message).to.equal(expectedValidationError.message);
-        });
-    }
-
     function assertServiceById(service: Service, expectedService: Service) {
         assertService(service, expectedService)
         expect(service.deploymentStatus).to.equal(expectedService.deploymentStatus);
-    }
-
-    function assertSuccessApiResponse(apiResponse: ApiResponse) {
-        assertApiResponse(ApiResponseMessage.SUCCESS, apiResponse);
-    }
-
-    function assertBadRequestApiResponse(apiResponse: ApiResponse) {
-        assertApiResponse(ApiResponseMessage.BAD_REQUEST, apiResponse);
-    }
-
-    function assertNotFoundApiResponse(apiResponse: ApiResponse) {
-        assertApiResponse(ApiResponseMessage.NOT_FOUND, apiResponse);
-    }
-
-    function assertApiResponse(expectedMessage: string, apiResponse: ApiResponse) {
-        expect(apiResponse.message).to.equal(expectedMessage);
-        expect(apiResponse.transactionId).to.not.empty;
-        expect(apiResponse.timestamp).to.not.empty;
     }
 
     async function waitDeploymentFinish() {
