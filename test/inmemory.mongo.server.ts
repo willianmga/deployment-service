@@ -57,7 +57,7 @@ class InMemoryMongoServer {
         }
     }
 
-    async loadUsersData() {
+    private async loadUsersData() {
 
         const hashService: HashService = new HashService();
 

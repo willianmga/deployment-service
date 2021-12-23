@@ -3,7 +3,7 @@ import {ApiResponse} from "../../src/service/error.interface";
 import {expect} from "chai";
 import {LoginRequest} from "../../src/session/session.interfaces";
 import {JwtTokenDetails} from "../../src/session/jwt.interfaces";
-import {logger} from "../../src/logger";
+import {TestsAssertionUtils} from "../utils/tests.assertion.utils";
 
 export class AuthenticationUtils {
 
@@ -24,7 +24,7 @@ export class AuthenticationUtils {
                 .expect('Content-type', /json/)
                 .then((response) => {
                     const body: ApiResponse = response.body;
-                    //assertSuccessApiResponse(body);
+                    TestsAssertionUtils.assertSuccessApiResponse(body);
 
                     const jwtTokenDetails: JwtTokenDetails = body.response;
                     expect(jwtTokenDetails.token).to.not.empty;
@@ -37,17 +37,17 @@ export class AuthenticationUtils {
     }
 
     static async logoff(jwtToken: string): Promise<void> {
-        return new Promise<void>(async (resolve) => {
+        return new Promise<void>(async (resolve, reject) => {
             await request(AuthenticationUtils.API_URL)
                 .post(AuthenticationUtils.LOGOUT_URI)
                 .set("Authorization", jwtToken)
                 .expect(200)
                 .expect('Content-type', /json/)
                 .then((response) => {
-                    const body: ApiResponse = response.body;
-                    //assertSuccessApiResponse(body);
+                    TestsAssertionUtils.assertSuccessApiResponse(response.body);
                     resolve();
-                });
+                })
+                .catch(error => reject(error));
         });
     }
 

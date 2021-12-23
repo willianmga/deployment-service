@@ -66,6 +66,17 @@ describe("Services Api tests", () => {
                 });
         });
 
+        it("should not create service without jwt token", async () => {
+            return request(API_URL)
+                .post(SERVICES_URI)
+                .send(ServiceRouterTestData.createNewService(uuid()))
+                .expect(401)
+                .expect('Content-type', /json/)
+                .then((response) => {
+                    TestsAssertionUtils.assertApiResponse(ApiResponseMessage.UNAUTHORIZED, response.body)
+                });
+        });
+
         it("should not create service with existing id", async () => {
 
             const id: string = uuid();
@@ -165,6 +176,19 @@ describe("Services Api tests", () => {
             return sendFindServiceByIdRequest(id, expectedService);
         });
 
+        it("should not get service by id without jwt token", async () => {
+            const id: string = uuid();
+            await sendCreateServiceRequest(ServiceRouterTestData.createNewService(id));
+
+            return request(API_URL)
+                .get(SERVICES_URI + `/${id}`)
+                .expect(401)
+                .expect('Content-type', /json/)
+                .then((response) => {
+                    TestsAssertionUtils.assertApiResponse(ApiResponseMessage.UNAUTHORIZED, response.body);
+                });
+        });
+
         it("should not find service by id when it does not exists", async () => {
             return request(API_URL)
                 .get(SERVICES_URI + `/${uuid()}`)
@@ -253,6 +277,20 @@ describe("Services Api tests", () => {
                     assertService(services[0], expectedFirstService);
                 });
         })
+
+        it("should not get services without jwt token", async () => {
+
+            const id: string = uuid();
+            await sendCreateServiceRequest(ServiceRouterTestData.createNewService(id));
+
+            return request(API_URL)
+                .get(SERVICES_URI)
+                .expect(401)
+                .expect('Content-type', /json/)
+                .then((response) => {
+                    TestsAssertionUtils.assertApiResponse(ApiResponseMessage.UNAUTHORIZED, response.body);
+                });
+        });
 
         it("should retrieve all created services sorting by creation time by default", async () => {
 
@@ -355,6 +393,20 @@ describe("Services Api tests", () => {
 
             return sendDeployServiceRequestForbidden(id);
         })
+
+        it("should not deploy service without jwt token", async () => {
+
+            const id: string = uuid();
+            await sendCreateServiceRequest(ServiceRouterTestData.createNewService(id));
+
+            return request(API_URL)
+                .post(SERVICES_URI + `/deploy/${id}`)
+                .expect(401)
+                .expect('Content-type', /json/)
+                .then((response) => {
+                    TestsAssertionUtils.assertApiResponse(ApiResponseMessage.UNAUTHORIZED, response.body);
+                });
+        });
 
         it("should deploy service and get deployment status as pending", async () => {
             const id: string = uuid();
