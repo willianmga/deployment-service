@@ -9,7 +9,6 @@ export class AuthenticationUtils {
 
     static readonly API_URL: string = "http://localhost:8080";
     static readonly LOGIN_URI: string = "/v1/sessions/login";
-    static readonly LOGOUT_URI: string = "/v1/sessions/logout";
 
     static readonly ADMIN_USER_CREDENTIALS: LoginRequest = {username: "admin", password: "strongpassword"};
     static readonly CONTRIBUTOR_USER_CREDENTIALS: LoginRequest = {username: "contributor", password: "evenstrongerpassword"};
@@ -31,21 +30,6 @@ export class AuthenticationUtils {
                     expect(jwtTokenDetails.expiration).to.not.empty;
 
                     resolve(jwtTokenDetails.token);
-                })
-                .catch(error => reject(error));
-        });
-    }
-
-    static async logoff(jwtToken: string): Promise<void> {
-        return new Promise<void>(async (resolve, reject) => {
-            await request(AuthenticationUtils.API_URL)
-                .post(AuthenticationUtils.LOGOUT_URI)
-                .set("Authorization", jwtToken)
-                .expect(200)
-                .expect('Content-type', /json/)
-                .then((response) => {
-                    TestsAssertionUtils.assertSuccessApiResponse(response.body);
-                    resolve();
                 })
                 .catch(error => reject(error));
         });

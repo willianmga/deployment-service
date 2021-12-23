@@ -6,6 +6,7 @@ import pinoHttp from "pino-http";
 import {logger} from "../logger";
 import http from "http";
 import {jwtTokenValidationMiddleware} from "./authentication.middleware";
+import {healthCheckRouter} from "../healthcheck/health.check.router";
 
 class ExpressServer {
 
@@ -22,6 +23,7 @@ class ExpressServer {
         app.use(jwtTokenValidationMiddleware);
         app.use("/v1/services", serviceRouter);
         app.use("/v1/sessions", sessionRouter);
+        app.use("/v1/healthcheck", healthCheckRouter);
 
         this.expressApp = app.listen(port, () => {
             logger.info(`Server started on port ${port}`);
