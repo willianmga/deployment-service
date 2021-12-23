@@ -1,6 +1,6 @@
 import mongoConnection from "../mongo";
 import {ApiMongoCollections} from "../mongo/mongo.collections.enum";
-import {Collection, InsertOneResult} from "mongodb";
+import {Collection, InsertOneResult, UpdateResult} from "mongodb";
 import {ApiErrorType} from "../service/error.interface";
 import {logger} from "../logger";
 import {Session, SessionMongo, SessionStatus} from "./session.interfaces";
@@ -20,6 +20,23 @@ export class MongoSessionRepository {
                 })
                 .catch(error => {
                     logger.error(`Failed to insert session. Error: ${error}`);
+                    reject(ApiErrorType.DB_ERROR);
+                });
+        });
+    }
+
+    async invalidateSession(id: string): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
+            this.getCollection()
+                .updateOne({_id: id}, {$set: {status: SessionStatus.LOGGED_OFF}})
+                .then((result: UpdateResult) => {
+                    if (!result.acknowledged || result.modifiedCount === 0) {
+                        throw new Error("Session not invalidated");
+                    }
+                    resolve();
+                })
+                .catch(error => {
+                    logger.error(`Failed to invalidate session. Error: ${error}`);
                     reject(ApiErrorType.DB_ERROR);
                 });
         });

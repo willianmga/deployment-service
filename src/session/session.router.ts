@@ -3,6 +3,7 @@ import {body, validationResult} from "express-validator";
 import {ApiErrorType, ApiResponseMessage, ApiValidationError} from "../service/error.interface";
 import {ApiResponseUtils} from "../express/api.response.utils";
 import {SessionService} from "./session.service";
+import {logger} from "../logger";
 
 export const sessionRouter = express.Router();
 const sessionService = new SessionService();
@@ -25,6 +26,18 @@ sessionRouter.post("/login", validateLoginRequest(), async (req: Request, res: R
             if (error === ApiErrorType.INVALID_CREDENTIALS) {
                 return res.status(401).json(ApiResponseUtils.badRequestResponse({message: "Invalid Credentials"}))
             }
+            res.status(500).json(ApiResponseUtils.errorResponse(ApiResponseMessage.UNEXPECTED_ERROR))
+        });
+});
+
+/**
+ * Logout
+ */
+sessionRouter.post("/logout", async (req: Request, res: Response) => {
+    sessionService.logout(req.sessionDetails)
+        .then((response) => res.status(200).json(ApiResponseUtils.successResponse(response)))
+        .catch((error) => {
+            logger.error(`Error happened: ${error}`);
             res.status(500).json(ApiResponseUtils.errorResponse(ApiResponseMessage.UNEXPECTED_ERROR))
         });
 });

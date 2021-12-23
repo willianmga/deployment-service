@@ -1,5 +1,5 @@
 import {v4 as uuid} from "uuid";
-import {LoginRequest, Session, SessionStatus} from "./session.interfaces";
+import {LoginRequest, Session, SessionDetails, SessionStatus} from "./session.interfaces";
 import {MongoUserRepository} from "../user/mongo.user.repository";
 import {ApiErrorType} from "../service/error.interface";
 import {JwtTokenService, SESSION_DURATION_IN_SECONDS} from "./jwt.token.service";
@@ -40,6 +40,10 @@ export class SessionService {
                     }
                 });
         });
+    }
+
+    async logout(sessionDetails: SessionDetails): Promise<void> {
+        return this.sessionRepository.invalidateSession(sessionDetails.sessionId);
     }
 
     private createSession(user: User): Session {

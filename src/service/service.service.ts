@@ -45,7 +45,7 @@ export class ServiceService {
         });
     };
 
-    getServices(sort: any): Promise<Array<Service>> {
+    getServices(sort: any): Promise<Service[]> {
         return this.serviceMongo.getServices(sort);
     };
 
