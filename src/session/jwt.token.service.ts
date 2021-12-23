@@ -1,4 +1,4 @@
-import jwt, {Algorithm, Jwt, JwtPayload, SignOptions, VerifyOptions} from "jsonwebtoken";
+import jwt, {Algorithm, SignOptions, VerifyOptions} from "jsonwebtoken";
 import {Session} from "./session.interfaces";
 import {JwtTokenDetails, ParsedJwtTokenDetails} from "./jwt.interfaces";
 import configLoader from "../config/config.loader";
