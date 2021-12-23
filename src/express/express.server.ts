@@ -5,6 +5,7 @@ import {sessionRouter} from "../session/session.router";
 import pinoHttp from "pino-http";
 import {logger} from "../logger";
 import http from "http";
+import {jwtTokenValidationMiddleware} from "./authentication.middleware";
 
 class ExpressServer {
 
@@ -18,6 +19,7 @@ class ExpressServer {
         app.use(helmet());
         app.use(express.json());
         app.use(pinoHttp({logger}));
+        app.use(jwtTokenValidationMiddleware);
         app.use("/v1/services", serviceRouter);
         app.use("/v1/sessions", sessionRouter);
 

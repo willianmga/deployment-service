@@ -16,7 +16,6 @@ class InMemoryMongoServer {
         try {
             this.mongoMemoryServer = await MongoMemoryServer.create();
             process.env.MONGO_URI = this.mongoMemoryServer.getUri();
-            process.env.MONGO_DATABASE = "deployment-service";
 
             this.mongoClient = new MongoClient(process.env.MONGO_URI);
             await this.mongoClient.connect();

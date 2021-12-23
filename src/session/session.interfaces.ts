@@ -1,3 +1,5 @@
+import {UserRole} from "../user/user.interfaces";
+
 export interface LoginRequest {
     username: string;
     password: string;
@@ -22,4 +24,11 @@ export interface SessionMongo {
     status: SessionStatus;
     createdDate: string;
     expirationDate: string;
+}
+
+export interface SessionDetails {
+    sessionId: string;
+    userId: string;
+    username: string;
+    userRole: UserRole
 }

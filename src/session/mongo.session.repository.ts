@@ -3,7 +3,7 @@ import {ApiMongoCollections} from "../mongo/mongo.collections.enum";
 import {Collection, InsertOneResult} from "mongodb";
 import {ApiErrorType} from "../service/error.interface";
 import {logger} from "../logger";
-import {Session, SessionMongo} from "./session.interfaces";
+import {Session, SessionMongo, SessionStatus} from "./session.interfaces";
 
 export class MongoSessionRepository {
 
@@ -23,6 +23,33 @@ export class MongoSessionRepository {
                     reject(ApiErrorType.DB_ERROR);
                 });
         });
+    }
+
+    async findActiveSessionById(id: string): Promise<Session> {
+        return new Promise<Session>((resolve, reject) => {
+            this.getCollection()
+                .findOne({_id: id, status: SessionStatus.ACTIVE})
+                .then(sessionMongo => {
+                    if (!sessionMongo) {
+                        return reject(ApiErrorType.NOT_FOUND);
+                    }
+                    resolve(this.mapToSession(sessionMongo));
+                })
+                .catch(error => {
+                    logger.error(`Failed to find session. Error: ${error}`)
+                    reject(ApiErrorType.DB_ERROR)
+                });
+        });
+    }
+
+    private mapToSession(session: SessionMongo): Session {
+        return {
+            id: session._id,
+            userId: session.userId,
+            status: session.status,
+            createdDate: session.createdDate,
+            expirationDate: session.expirationDate
+        };
     }
 
     private mapToSessionMongo(session: Session): SessionMongo {

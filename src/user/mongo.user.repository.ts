@@ -1,16 +1,24 @@
 import mongoConnection from "../mongo";
-import {User, UserMongo} from "./user.interfaces";
+import {User, UserMongo, UserStatus} from "./user.interfaces";
 import {ApiMongoCollections} from "../mongo/mongo.collections.enum";
-import {Collection, WithId} from "mongodb";
+import {Collection, Filter, WithId} from "mongodb";
 import {ApiErrorType} from "../service/error.interface";
 import {logger} from "../logger";
 
 export class MongoUserRepository {
 
-    async findUser(username: string): Promise<User> {
+    async findUserByUsername(username: string): Promise<User> {
+        return this.findUserBy({username, status: UserStatus.ACTIVE});
+    }
+
+    async findUserById(id: string): Promise<User> {
+        return this.findUserBy({_id: id, status: UserStatus.ACTIVE});
+    }
+
+    private async findUserBy(filter: Filter<UserMongo>): Promise<User> {
         return new Promise<User>((resolve, reject) => {
             this.getCollection()
-                .findOne({username})
+                .findOne(filter)
                 .then(userMongo => {
                     if (!userMongo) {
                         return reject(ApiErrorType.NOT_FOUND);

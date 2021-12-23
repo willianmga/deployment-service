@@ -2,23 +2,21 @@ import {v4 as uuid} from "uuid";
 import {LoginRequest, Session, SessionStatus} from "./session.interfaces";
 import {MongoUserRepository} from "../user/mongo.user.repository";
 import {ApiErrorType} from "../service/error.interface";
-import {JwtService} from "./jwt.service";
+import {JwtTokenService, SESSION_DURATION_IN_SECONDS} from "./jwt.token.service";
 import {JwtTokenDetails} from "./jwt.interfaces";
 import {User} from "../user/user.interfaces";
 import {MongoSessionRepository} from "./mongo.session.repository";
 import {HashService} from "./hash.service";
 
-const SESSION_DURATION_IN_SECONDS: number = (24 * 60 * 60);
-
 export class SessionService {
 
-    private jwtService: JwtService;
+    private jwtService: JwtTokenService;
     private hashService: HashService;
     private userRepository: MongoUserRepository;
     private sessionRepository: MongoSessionRepository;
 
     constructor() {
-        this.jwtService = new JwtService();
+        this.jwtService = new JwtTokenService();
         this.hashService = new HashService();
         this.userRepository = new MongoUserRepository();
         this.sessionRepository = new MongoSessionRepository();
@@ -26,7 +24,7 @@ export class SessionService {
 
     async login(loginRequest: LoginRequest): Promise<JwtTokenDetails> {
         return new Promise<JwtTokenDetails>((resolve, reject) => {
-            this.userRepository.findUser(loginRequest.username)
+            this.userRepository.findUserByUsername(loginRequest.username)
                 .then((user: User) => {
                     if (this.hashService.hash(loginRequest.password) === user.password) {
                         return this.sessionRepository.insertSession(this.createSession(user));
