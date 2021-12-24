@@ -2,14 +2,13 @@
 
 ## Script for automating deployment of source code into Heroku
 
-export DOCKER_HUB_REPO="willianmga"
 export APPNAME="liferay-deployment-service"
-
-export DOCKER_HUB_USERNAME="willianmga"
 export USERNAME="willian.bodnariuc@gmail.com"
 
-# Deploys docker image to Heroku
+# Build
+docker build -t $APPNAME:latest .
 
+# Deploys docker image to Heroku
 heroku login --username $USERNAME
 export TOKEN=$(heroku auth:token)
 

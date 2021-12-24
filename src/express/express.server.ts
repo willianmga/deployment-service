@@ -43,7 +43,7 @@ class ExpressServer {
 
     private static getPort(): number {
         try {
-            return parseInt(process.env.SERVER_PORT as string, 10) || 8080;
+            return parseInt(process.env.PORT as string, 10) || 8080;
         } catch (error) {
             return 8080;
         }

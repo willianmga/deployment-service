@@ -7,6 +7,7 @@ import {JwtTokenDetails} from "./jwt.interfaces";
 import {User} from "../user/user.interfaces";
 import {MongoSessionRepository} from "./mongo.session.repository";
 import {HashService} from "./hash.service";
+import {logger} from "../logger";
 
 export class SessionService {
 
@@ -31,7 +32,10 @@ export class SessionService {
                     }
                     reject(ApiErrorType.INVALID_CREDENTIALS);
                 })
-                .then(session => resolve(this.jwtService.generateJwtToken(session)))
+                .then(session => {
+                    logger.info(`User ${this.hashService.hash(session.userId)} successfully logged in`);
+                    resolve(this.jwtService.generateJwtToken(session));
+                })
                 .catch(error => {
                     if (error === ApiErrorType.NOT_FOUND) {
                         reject(ApiErrorType.INVALID_CREDENTIALS);
