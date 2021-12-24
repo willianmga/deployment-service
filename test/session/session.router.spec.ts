@@ -4,10 +4,12 @@ import request from "supertest";
 import expressServer from "../../src/express/express.server";
 import inMemoryMongoServer from "../inmemory.mongo.server";
 import mongoConnection from "../../src/mongo";
-import {ApiResponse, ApiResponseMessages, ApiValidationError} from "../../src/service/error.interface";
+import {ApiResponse, ApiResponseMessage, ApiValidationError} from "../../src/service/error.interface";
 import {LoginRequest} from "../../src/session/session.interfaces";
 import {JwtTokenDetails} from "../../src/session/jwt.interfaces";
 import {TestsAssertionUtils} from "../utils/tests.assertion.utils";
+import {AuthenticationUtils} from "./authentication.utils";
+import configLoader from "../../src/config/config.loader";
 
 describe("Session Api tests", () => {
 
@@ -16,8 +18,8 @@ describe("Session Api tests", () => {
     const LOGOUT_URI: string = "/v1/sessions/logout";
 
     before(async () => {
+        await configLoader.load();
         await inMemoryMongoServer.connect();
-        await inMemoryMongoServer.loadUsersData();
         await expressServer.start();
     });
 
@@ -29,13 +31,20 @@ describe("Session Api tests", () => {
 
     afterEach(async () =>{
         await inMemoryMongoServer.cleanUp();
-        await inMemoryMongoServer.loadUsersData();
     })
 
     describe("POST /v1/sessions/login route tests", () => {
 
-        it("should login successfully", async () => {
-            return sendLoginRequest({username: "admin", password: "strongpassword"});
+        it("should login successfully with admin credentials", async () => {
+            return sendLoginRequest(AuthenticationUtils.ADMIN_USER_CREDENTIALS);
+        });
+
+        it("should login successfully with contributor credentials", async () => {
+            return sendLoginRequest(AuthenticationUtils.CONTRIBUTOR_USER_CREDENTIALS);
+        });
+
+        it("should login successfully with contributor guest", async () => {
+            return sendLoginRequest(AuthenticationUtils.GUEST_USER_CREDENTIALS);
         });
 
         it("should fail to login with invalid credentials and 401 status", async () => {
@@ -56,6 +65,35 @@ describe("Session Api tests", () => {
 
     });
 
+    describe("POST /v1/sessions/logout route tests", () => {
+
+        it("should logout successfully with admin credentials", async () => {
+            const jwtToken: string = await AuthenticationUtils.login(AuthenticationUtils.ADMIN_USER_CREDENTIALS);
+            return sendLogoutRequest(jwtToken);
+        });
+
+        it("should logout successfully with contributor credentials", async () => {
+            const jwtToken: string = await AuthenticationUtils.login(AuthenticationUtils.CONTRIBUTOR_USER_CREDENTIALS);
+            return sendLogoutRequest(jwtToken);
+        });
+
+        it("should logout successfully with contributor guest", async () => {
+            const jwtToken: string = await AuthenticationUtils.login(AuthenticationUtils.GUEST_USER_CREDENTIALS);
+            return sendLogoutRequest(jwtToken);
+        });
+
+        it("should not logout without jwt token", async () => {
+            return request(API_URL)
+                .post(LOGOUT_URI)
+                .expect(401)
+                .expect('Content-type', /json/)
+                .then((response) => {
+                    TestsAssertionUtils.assertApiResponse(ApiResponseMessage.UNAUTHORIZED, response.body);
+                });
+        });
+
+    });
+
     function sendLoginRequest(loginRequest: LoginRequest) {
         return request(API_URL)
             .post(LOGIN_URI)
@@ -64,11 +102,22 @@ describe("Session Api tests", () => {
             .expect('Content-type', /json/)
             .then((response) => {
                 const body: ApiResponse = response.body;
-                assertSuccessApiResponse(body);
+                TestsAssertionUtils.assertSuccessApiResponse(body);
 
                 const jwtTokenDetails: JwtTokenDetails = body.response;
                 expect(jwtTokenDetails.token).to.not.empty;
                 expect(jwtTokenDetails.expiration).to.not.empty;
+            });
+    }
+
+    function sendLogoutRequest(jwtToken: string) {
+        return request(API_URL)
+            .post(LOGOUT_URI)
+            .set("Authorization", jwtToken)
+            .expect(200)
+            .expect('Content-type', /json/)
+            .then((response) => {
+                TestsAssertionUtils.assertSuccessApiResponse(response.body);
             });
     }
 
@@ -80,7 +129,7 @@ describe("Session Api tests", () => {
             .expect('Content-type', /json/)
             .then((response) => {
                 const body: ApiResponse = response.body;
-                assertBadRequestApiResponse(body);
+                TestsAssertionUtils.assertBadRequestApiResponse(body);
 
                 expect(body.response.message).to.equal("Invalid Credentials");
             });
@@ -95,28 +144,10 @@ describe("Session Api tests", () => {
             .expect('Content-type', /json/)
             .then((response) => {
                 const body: ApiResponse = response.body;
-                assertBadRequestApiResponse(body);
+                TestsAssertionUtils.assertBadRequestApiResponse(body);
 
                 TestsAssertionUtils.assertValidationErrors(body.response, expectedValidationErrors);
             });
-    }
-
-    function assertSuccessApiResponse(apiResponse: ApiResponse) {
-        assertApiResponse(ApiResponseMessages.SUCCESS, apiResponse);
-    }
-
-    function assertBadRequestApiResponse(apiResponse: ApiResponse) {
-        assertApiResponse(ApiResponseMessages.BAD_REQUEST, apiResponse);
-    }
-
-    function assertNotFoundApiResponse(apiResponse: ApiResponse) {
-        assertApiResponse(ApiResponseMessages.NOT_FOUND, apiResponse);
-    }
-
-    function assertApiResponse(expectedMessage: string, apiResponse: ApiResponse) {
-        expect(apiResponse.message).to.equal(expectedMessage);
-        expect(apiResponse.transactionId).to.not.empty;
-        expect(apiResponse.timestamp).to.not.empty;
     }
 
 });

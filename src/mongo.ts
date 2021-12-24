@@ -40,6 +40,20 @@ class MongoConnection {
         return this.database;
     }
 
+    async pingServer(): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
+            this.database.admin()
+                .ping()
+                .then(pingResponse => {
+                    if (pingResponse.ok !== 1) {
+                        return reject();
+                    }
+                    resolve();
+                })
+                .catch(error => reject(error));
+        });
+    }
+
 }
 
 const mongoConnection: MongoConnection = new MongoConnection();

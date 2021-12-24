@@ -1,6 +1,6 @@
 import md5 from "md5";
 import {DeploymentLibrary} from "lc-interviews";
-import {Service, SortServicesBy} from "./service.interface";
+import {Service} from "./service.interface";
 import {MongoServiceRepository} from "./mongo.service.repository";
 import {logger} from "../logger";
 import {ApiErrorType} from "./error.interface";

@@ -6,8 +6,11 @@ import expressServer from "../../src/express/express.server";
 import inMemoryMongoServer from "../inmemory.mongo.server";
 import mongoConnection from "../../src/mongo";
 import {DeploymentStatus, Service, ServiceType} from "../../src/service/service.interface";
-import {ApiResponse, ApiResponseMessages, ApiValidationError} from "../../src/service/error.interface";
+import {ApiResponse, ApiResponseMessage, ApiValidationError} from "../../src/service/error.interface";
 import {ServiceRouterTestData} from "./service.router.test.data";
+import {AuthenticationUtils} from "../session/authentication.utils";
+import configLoader from "../../src/config/config.loader";
+import {TestsAssertionUtils} from "../utils/tests.assertion.utils";
 
 describe("Services Api tests", () => {
 
@@ -16,9 +19,16 @@ describe("Services Api tests", () => {
     const DEPLOYMENT_MAX_WAIT_TIME: number = 7 * 1000;
     const DEPLOYMENT_TEST_TIMEOUT: number = DEPLOYMENT_MAX_WAIT_TIME + 2000;
 
+    let JWT_TOKEN: string;
+
     before(async () => {
+        await configLoader.load();
         await inMemoryMongoServer.connect();
         await expressServer.start();
+    })
+
+    beforeEach(async () => {
+        JWT_TOKEN = await AuthenticationUtils.login(AuthenticationUtils.ADMIN_USER_CREDENTIALS);
     });
 
     after(async () => {
@@ -33,8 +43,38 @@ describe("Services Api tests", () => {
 
     describe("POST /v1/services/ route tests", () => {
 
-        it("should create service", async () => {
+        it("should create service with admin role", async () => {
             return sendCreateServiceRequest(ServiceRouterTestData.createNewService(uuid()));
+        });
+
+        it("should create service with contributor role", async () => {
+            JWT_TOKEN = await AuthenticationUtils.login(AuthenticationUtils.CONTRIBUTOR_USER_CREDENTIALS);
+            return sendCreateServiceRequest(ServiceRouterTestData.createNewService(uuid()));
+        });
+
+        it("should not create service with guest role", async () => {
+            JWT_TOKEN = await AuthenticationUtils.login(AuthenticationUtils.GUEST_USER_CREDENTIALS);
+
+            return request(API_URL)
+                .post(SERVICES_URI)
+                .set("Authorization", JWT_TOKEN)
+                .send(ServiceRouterTestData.createNewService(uuid()))
+                .expect(403)
+                .expect('Content-type', /json/)
+                .then((response) => {
+                    TestsAssertionUtils.assertApiResponse(ApiResponseMessage.FORBIDDEN, response.body)
+                });
+        });
+
+        it("should not create service without jwt token", async () => {
+            return request(API_URL)
+                .post(SERVICES_URI)
+                .send(ServiceRouterTestData.createNewService(uuid()))
+                .expect(401)
+                .expect('Content-type', /json/)
+                .then((response) => {
+                    TestsAssertionUtils.assertApiResponse(ApiResponseMessage.UNAUTHORIZED, response.body)
+                });
         });
 
         it("should not create service with existing id", async () => {
@@ -108,33 +148,55 @@ describe("Services Api tests", () => {
 
     describe("GET /v1/services/:id route tests", () => {
 
-        it("should find service by id", async () => {
-
+        it("should find service by id with admin role", async () => {
             const id: string = uuid();
-
-            const expectedService: Service = {
-                id: id,
-                image: "liferay/portal@latest",
-                createdAt: "123",
-                type: ServiceType.Deployment,
-                cpu: 1,
-                memory: 1024,
-                deploymentStatus: DeploymentStatus.PENDING
-            };
-
+            const expectedService: Service = {id: id, image: "liferay/portal@latest", createdAt: "123", type: ServiceType.Deployment, cpu: 1, memory: 1024, deploymentStatus: DeploymentStatus.PENDING};
             await sendCreateServiceRequest(ServiceRouterTestData.createNewService(id));
             return sendFindServiceByIdRequest(id, expectedService);
+        });
 
+        it("should find service by id with contributor role", async () => {
+
+            const id: string = uuid();
+            const expectedService: Service = {id: id, image: "liferay/portal@latest", createdAt: "123", type: ServiceType.Deployment, cpu: 1, memory: 1024, deploymentStatus: DeploymentStatus.PENDING};
+            await sendCreateServiceRequest(ServiceRouterTestData.createNewService(id));
+
+            JWT_TOKEN = await AuthenticationUtils.login(AuthenticationUtils.CONTRIBUTOR_USER_CREDENTIALS);
+
+            return sendFindServiceByIdRequest(id, expectedService);
+        });
+
+        it("should find service by id with guest role", async () => {
+            const id: string = uuid();
+            await sendCreateServiceRequest(ServiceRouterTestData.createNewService(id));
+
+            JWT_TOKEN = await AuthenticationUtils.login(AuthenticationUtils.GUEST_USER_CREDENTIALS);
+
+            const expectedService: Service = {id: id, image: "liferay/portal@latest", createdAt: "123", type: ServiceType.Deployment, cpu: 1, memory: 1024, deploymentStatus: DeploymentStatus.PENDING};
+            return sendFindServiceByIdRequest(id, expectedService);
+        });
+
+        it("should not get service by id without jwt token", async () => {
+            const id: string = uuid();
+            await sendCreateServiceRequest(ServiceRouterTestData.createNewService(id));
+
+            return request(API_URL)
+                .get(SERVICES_URI + `/${id}`)
+                .expect(401)
+                .expect('Content-type', /json/)
+                .then((response) => {
+                    TestsAssertionUtils.assertApiResponse(ApiResponseMessage.UNAUTHORIZED, response.body);
+                });
         });
 
         it("should not find service by id when it does not exists", async () => {
             return request(API_URL)
                 .get(SERVICES_URI + `/${uuid()}`)
+                .set("Authorization", JWT_TOKEN)
                 .expect(404)
                 .expect('Content-type', /json/)
                 .then((response) => {
-                    const body: ApiResponse = response.body;
-                    assertNotFoundApiResponse(body);
+                    TestsAssertionUtils.assertNotFoundApiResponse(response.body);
                 });
         });
 
@@ -144,6 +206,90 @@ describe("Services Api tests", () => {
 
         it("should retrieve no services", async () => {
             return sendGetServicesRequest("", []);
+        });
+
+        it("should retrieve all services with admin role", async () => {
+
+            const firstServiceId: string = uuid();
+            const firstService: Service = {id: firstServiceId, image: "liferay/portal@v1", createdAt: "789", type: ServiceType.Deployment, cpu: 1, memory: 1024}
+            const expectedFirstService: Service = {id: firstServiceId, image: "liferay/portal@v1", createdAt: "789", type: ServiceType.Deployment, cpu: 1, memory: 1024, deploymentStatus: DeploymentStatus.PENDING}
+            await sendCreateServiceRequest(firstService);
+
+            return request(API_URL)
+                .get(SERVICES_URI)
+                .set("Authorization", JWT_TOKEN)
+                .expect('Content-type', /json/)
+                .expect(200)
+                .then((response) => {
+                    const body: ApiResponse = response.body;
+                    TestsAssertionUtils.assertSuccessApiResponse(body);
+
+                    const services: Array<Service> = body.response;
+                    expect(services.length).to.equal(1);
+                    assertService(services[0], expectedFirstService);
+                });
+        })
+
+        it("should retrieve all services with contributor role", async () => {
+
+            const firstServiceId: string = uuid();
+            const firstService: Service = {id: firstServiceId, image: "liferay/portal@v1", createdAt: "789", type: ServiceType.Deployment, cpu: 1, memory: 1024}
+            const expectedFirstService: Service = {id: firstServiceId, image: "liferay/portal@v1", createdAt: "789", type: ServiceType.Deployment, cpu: 1, memory: 1024, deploymentStatus: DeploymentStatus.PENDING}
+            await sendCreateServiceRequest(firstService);
+
+            JWT_TOKEN = await AuthenticationUtils.login(AuthenticationUtils.CONTRIBUTOR_USER_CREDENTIALS);
+
+            return request(API_URL)
+                .get(SERVICES_URI)
+                .set("Authorization", JWT_TOKEN)
+                .expect('Content-type', /json/)
+                .expect(200)
+                .then((response) => {
+                    const body: ApiResponse = response.body;
+                    TestsAssertionUtils.assertSuccessApiResponse(body);
+
+                    const services: Array<Service> = body.response;
+                    expect(services.length).to.equal(1);
+                    assertService(services[0], expectedFirstService);
+                });
+        })
+
+        it("should retrieve all services with guest role", async () => {
+
+            const firstServiceId: string = uuid();
+            const firstService: Service = {id: firstServiceId, image: "liferay/portal@v1", createdAt: "789", type: ServiceType.Deployment, cpu: 1, memory: 1024}
+            const expectedFirstService: Service = {id: firstServiceId, image: "liferay/portal@v1", createdAt: "789", type: ServiceType.Deployment, cpu: 1, memory: 1024, deploymentStatus: DeploymentStatus.PENDING}
+            await sendCreateServiceRequest(firstService);
+
+            JWT_TOKEN = await AuthenticationUtils.login(AuthenticationUtils.GUEST_USER_CREDENTIALS);
+
+            return request(API_URL)
+                .get(SERVICES_URI)
+                .set("Authorization", JWT_TOKEN)
+                .expect('Content-type', /json/)
+                .expect(200)
+                .then((response) => {
+                    const body: ApiResponse = response.body;
+                    TestsAssertionUtils.assertSuccessApiResponse(body);
+
+                    const services: Array<Service> = body.response;
+                    expect(services.length).to.equal(1);
+                    assertService(services[0], expectedFirstService);
+                });
+        })
+
+        it("should not get services without jwt token", async () => {
+
+            const id: string = uuid();
+            await sendCreateServiceRequest(ServiceRouterTestData.createNewService(id));
+
+            return request(API_URL)
+                .get(SERVICES_URI)
+                .expect(401)
+                .expect('Content-type', /json/)
+                .then((response) => {
+                    TestsAssertionUtils.assertApiResponse(ApiResponseMessage.UNAUTHORIZED, response.body);
+                });
         });
 
         it("should retrieve all created services sorting by creation time by default", async () => {
@@ -165,11 +311,12 @@ describe("Services Api tests", () => {
 
             return request(API_URL)
                 .get(SERVICES_URI)
+                .set("Authorization", JWT_TOKEN)
                 .expect('Content-type', /json/)
                 .expect(200)
                 .then((response) => {
                     const body: ApiResponse = response.body;
-                    assertSuccessApiResponse(body);
+                    TestsAssertionUtils.assertSuccessApiResponse(body);
 
                     const services: Array<Service> = body.response;
                     expect(services.length).to.equal(3);
@@ -205,14 +352,15 @@ describe("Services Api tests", () => {
 
             return request(API_URL)
                 .get(SERVICES_URI + "?sort=something-else")
+                .set("Authorization", JWT_TOKEN)
                 .expect('Content-type', /json/)
                 .expect(400)
                 .then((response) => {
                     const body: ApiResponse = response.body;
-                    assertBadRequestApiResponse(body);
+                    TestsAssertionUtils.assertBadRequestApiResponse(body);
 
                     const validationErrors: Array<ApiValidationError> = body.response;
-                    assertValidationErrors(validationErrors, expectedValidationErrors);
+                    TestsAssertionUtils.assertValidationErrors(validationErrors, expectedValidationErrors);
                 });
         })
 
@@ -220,11 +368,45 @@ describe("Services Api tests", () => {
 
     describe("POST /v1/services/deploy/:id route tests", () => {
 
-        it("should deploy service", async () => {
+        it("should deploy service with admin role", async () => {
             const id: string = uuid();
             await sendCreateServiceRequest(ServiceRouterTestData.createNewService(id));
             return sendDeployServiceRequest(id);
         })
+
+        it("should not deploy service with contributor role", async () => {
+
+            const id: string = uuid();
+            await sendCreateServiceRequest(ServiceRouterTestData.createNewService(id));
+
+            JWT_TOKEN = await AuthenticationUtils.login(AuthenticationUtils.CONTRIBUTOR_USER_CREDENTIALS);
+
+            return sendDeployServiceRequestForbidden(id);
+        })
+
+        it("should not deploy service with guest role", async () => {
+
+            const id: string = uuid();
+            await sendCreateServiceRequest(ServiceRouterTestData.createNewService(id));
+
+            JWT_TOKEN = await AuthenticationUtils.login(AuthenticationUtils.GUEST_USER_CREDENTIALS);
+
+            return sendDeployServiceRequestForbidden(id);
+        })
+
+        it("should not deploy service without jwt token", async () => {
+
+            const id: string = uuid();
+            await sendCreateServiceRequest(ServiceRouterTestData.createNewService(id));
+
+            return request(API_URL)
+                .post(SERVICES_URI + `/deploy/${id}`)
+                .expect(401)
+                .expect('Content-type', /json/)
+                .then((response) => {
+                    TestsAssertionUtils.assertApiResponse(ApiResponseMessage.UNAUTHORIZED, response.body);
+                });
+        });
 
         it("should deploy service and get deployment status as pending", async () => {
             const id: string = uuid();
@@ -253,11 +435,11 @@ describe("Services Api tests", () => {
         it("should not deploy service when service does not exist", async () => {
             return request(API_URL)
                 .post(SERVICES_URI + `/deploy/${uuid()}`)
+                .set("Authorization", JWT_TOKEN)
                 .expect(404)
                 .expect('Content-type', /json/)
                 .then((response) => {
-                    const body: ApiResponse = response.body;
-                    assertNotFoundApiResponse(body);
+                    TestsAssertionUtils.assertNotFoundApiResponse(response.body);
                 });
         })
 
@@ -280,14 +462,14 @@ describe("Services Api tests", () => {
     function sendCreateServiceRequest(service: Service) {
         return request(API_URL)
             .post(SERVICES_URI)
+            .set("Authorization", JWT_TOKEN)
             .send(service)
             .expect(201)
             .expect('Content-type', /json/)
             .then((response) => {
                 const body: ApiResponse = response.body;
-                expect(body.message).to.equal("Success");
-                expect(body.transactionId).to.not.empty;
-                expect(body.timestamp).to.not.empty;
+                TestsAssertionUtils.assertSuccessApiResponse(body);
+
                 expect(body.response.id).to.equal(service.id);
             });
     }
@@ -295,40 +477,53 @@ describe("Services Api tests", () => {
     function sendCreateServiceWithBadRequest(service: Service, expectedValidationErrors: Array<ApiValidationError>) {
         return request(API_URL)
             .post(SERVICES_URI)
+            .set("Authorization", JWT_TOKEN)
             .send(service)
             .expect(400)
             .expect('Content-type', /json/)
             .then((response) => {
                 const body: ApiResponse = response.body;
-                assertBadRequestApiResponse(body);
+                TestsAssertionUtils.assertBadRequestApiResponse(body);
 
                 const validationErrors: Array<ApiValidationError> = body.response;
-                assertValidationErrors(validationErrors, expectedValidationErrors);
+                TestsAssertionUtils.assertValidationErrors(validationErrors, expectedValidationErrors);
             });
     }
 
     function sendDeployServiceRequest(id: string) {
         return request(API_URL)
             .post(SERVICES_URI + `/deploy/${id}`)
+            .set("Authorization", JWT_TOKEN)
             .expect(200)
             .expect('Content-type', /json/)
             .then((response) => {
                 const body: ApiResponse = response.body;
-                expect(body.message).to.equal("Success");
-                expect(body.transactionId).to.not.empty;
-                expect(body.timestamp).to.not.empty;
+                TestsAssertionUtils.assertSuccessApiResponse(body);
+
                 expect(body.response.status).to.equal('Deployment scheduled');
+            });
+    }
+
+    function sendDeployServiceRequestForbidden(id: string) {
+        return request(API_URL)
+            .post(SERVICES_URI + `/deploy/${id}`)
+            .set("Authorization", JWT_TOKEN)
+            .expect(403)
+            .expect('Content-type', /json/)
+            .then((response) => {
+                TestsAssertionUtils.assertApiResponse(ApiResponseMessage.FORBIDDEN, response.body);
             });
     }
 
     function sendFindServiceByIdRequest(id: string, expectedService: Service) {
         return request(API_URL)
             .get(SERVICES_URI + `/${id}`)
+            .set("Authorization", JWT_TOKEN)
             .expect(200)
             .expect('Content-type', /json/)
             .then((response) => {
                 const body: ApiResponse = response.body;
-                assertSuccessApiResponse(body);
+                TestsAssertionUtils.assertSuccessApiResponse(body);
 
                 const service: Service = body.response;
                 assertServiceById(service, expectedService);
@@ -338,11 +533,12 @@ describe("Services Api tests", () => {
     function sendGetServicesRequest(sort: string, expectedServices: Array<Service>) {
         return request(API_URL)
             .get(SERVICES_URI + sort)
+            .set("Authorization", JWT_TOKEN)
             .expect('Content-type', /json/)
             .expect(200)
             .then((response) => {
                 const body: ApiResponse = response.body;
-                assertSuccessApiResponse(body);
+                TestsAssertionUtils.assertSuccessApiResponse(body);
 
                 const services: Array<Service> = body.response;
                 expect(services.length).to.equal(expectedServices.length);
@@ -362,38 +558,9 @@ describe("Services Api tests", () => {
         expect(service.memory).to.equal(expectedService.memory);
     }
 
-    function assertValidationErrors(validationErrors: Array<ApiValidationError>,
-                                           expectedValidationErrors: Array<ApiValidationError>) {
-        expectedValidationErrors.forEach((error, index) => {
-            const validationError = validationErrors[index];
-            const expectedValidationError = expectedValidationErrors[index];
-            expect(validationError.fieldName).to.equal(expectedValidationError.fieldName);
-            expect(validationError.message).to.equal(expectedValidationError.message);
-        });
-    }
-
     function assertServiceById(service: Service, expectedService: Service) {
         assertService(service, expectedService)
         expect(service.deploymentStatus).to.equal(expectedService.deploymentStatus);
-    }
-
-
-    function assertSuccessApiResponse(apiResponse: ApiResponse) {
-        assertApiResponse(ApiResponseMessages.SUCCESS, apiResponse);
-    }
-
-    function assertBadRequestApiResponse(apiResponse: ApiResponse) {
-        assertApiResponse(ApiResponseMessages.BAD_REQUEST, apiResponse);
-    }
-
-    function assertNotFoundApiResponse(apiResponse: ApiResponse) {
-        assertApiResponse(ApiResponseMessages.NOT_FOUND, apiResponse);
-    }
-
-    function assertApiResponse(expectedMessage: string, apiResponse: ApiResponse) {
-        expect(apiResponse.message).to.equal(expectedMessage);
-        expect(apiResponse.transactionId).to.not.empty;
-        expect(apiResponse.timestamp).to.not.empty;
     }
 
     async function waitDeploymentFinish() {

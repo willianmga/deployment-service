@@ -1,4 +1,4 @@
-import {ApiResponse, ApiResponseMessages, ApiValidationError} from "../service/error.interface";
+import {ApiResponse, ApiResponseMessage, ApiValidationError} from "../service/error.interface";
 import {v4 as uuid} from "uuid";
 import {ValidationError} from "express-validator/src/base";
 
@@ -11,7 +11,7 @@ export class ApiResponseUtils {
 
     static successResponse(data: any): ApiResponse {
         return {
-            message: ApiResponseMessages.SUCCESS,
+            message: ApiResponseMessage.SUCCESS,
             timestamp: Date.now().toString(),
             transactionId: uuid(),
             response: data
@@ -20,14 +20,14 @@ export class ApiResponseUtils {
 
     static badRequestResponse(data: any): ApiResponse {
         return {
-            message: ApiResponseMessages.BAD_REQUEST,
+            message: ApiResponseMessage.BAD_REQUEST,
             timestamp: Date.now().toString(),
             transactionId: uuid(),
             response: data
         }
     }
 
-    static errorResponse(message: ApiResponseMessages): ApiResponse {
+    static errorResponse(message: ApiResponseMessage): ApiResponse {
         return {
             message,
             timestamp: Date.now().toString(),

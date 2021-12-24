@@ -1,9 +1,10 @@
 import express, {Request, Response} from "express";
 import {body, param, query, validationResult} from "express-validator";
 import {ServiceService} from "./service.service";
-import {ApiErrorType, ApiResponseMessages, ApiValidationError} from "./error.interface";
+import {ApiErrorType, ApiResponseMessage, ApiValidationError} from "./error.interface";
 import {ServiceType, SortServicesBy} from "./service.interface";
 import {ApiResponseUtils} from "../express/api.response.utils";
+import {hasContributorOrHigherRole, hasAdminRole} from "../express/authorization.middleware";
 
 export const serviceRouter = express.Router();
 const serviceService = new ServiceService();
@@ -11,7 +12,7 @@ const serviceService = new ServiceService();
 /**
  * Create Service
  */
-serviceRouter.post("/", validateCreateServiceRequest(), async (req: Request, res: Response) => {
+serviceRouter.post("/", hasContributorOrHigherRole, validateCreateServiceRequest(), async (req: Request, res: Response) => {
 
     const errors = validationResult(req);
 
@@ -28,22 +29,22 @@ serviceRouter.post("/", validateCreateServiceRequest(), async (req: Request, res
                 const validationError: ApiValidationError = {fieldName: "id", message: "id already in use"};
                 return res.status(400).json(ApiResponseUtils.badRequestResponse([validationError]))
             }
-            res.status(500).json(ApiResponseUtils.errorResponse(ApiResponseMessages.UNEXPECTED_ERROR))
+            res.status(500).json(ApiResponseUtils.errorResponse(ApiResponseMessage.UNEXPECTED_ERROR))
         });
 });
 
 /**
  * Deploy Service by Id
  */
-serviceRouter.post("/deploy/:id", validateIdOnPath(), async (req: Request, res: Response) => {
+serviceRouter.post("/deploy/:id", hasAdminRole, validateIdOnPath(), async (req: Request, res: Response) => {
     serviceService
         .deployService(req.params.id)
         .then(result => res.status(200).json(ApiResponseUtils.successResponse(result)))
         .catch(error => {
             if (error === ApiErrorType.NOT_FOUND) {
-                return res.status(404).json(ApiResponseUtils.errorResponse(ApiResponseMessages.NOT_FOUND))
+                return res.status(404).json(ApiResponseUtils.errorResponse(ApiResponseMessage.NOT_FOUND))
             }
-            res.status(500).json(ApiResponseUtils.errorResponse(ApiResponseMessages.UNEXPECTED_ERROR));
+            res.status(500).json(ApiResponseUtils.errorResponse(ApiResponseMessage.UNEXPECTED_ERROR));
         });
 });
 
@@ -56,9 +57,9 @@ serviceRouter.get("/:id", validateIdOnPath(), async (req: Request, res: Response
         .then(result => res.status(200).json(ApiResponseUtils.successResponse(result)))
         .catch(error => {
             if (error === ApiErrorType.NOT_FOUND) {
-                return res.status(404).json(ApiResponseUtils.errorResponse(ApiResponseMessages.NOT_FOUND))
+                return res.status(404).json(ApiResponseUtils.errorResponse(ApiResponseMessage.NOT_FOUND))
             }
-            res.status(500).json(ApiResponseUtils.errorResponse(ApiResponseMessages.UNEXPECTED_ERROR));
+            res.status(500).json(ApiResponseUtils.errorResponse(ApiResponseMessage.UNEXPECTED_ERROR));
         });
 });
 
@@ -78,7 +79,7 @@ serviceRouter.get("/", validateGetServicesRequest(), async (req: Request, res: R
     serviceService
         .getServices(req.query.sort)
         .then(result => res.status(200).json(ApiResponseUtils.successResponse(result)))
-        .catch(error => res.status(500).json(ApiResponseUtils.errorResponse(ApiResponseMessages.UNEXPECTED_ERROR)));
+        .catch(error => res.status(500).json(ApiResponseUtils.errorResponse(ApiResponseMessage.UNEXPECTED_ERROR)));
 });
 
 function validateIdOnPath() {

@@ -2,9 +2,9 @@ import {createHash} from "crypto";
 
 export class HashService {
 
-    hash(password: string): string {
+    hash(text: string): string {
         return createHash("sha256")
-            .update(password)
+            .update(text)
             .digest("hex");
     }
 

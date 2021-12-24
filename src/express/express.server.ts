@@ -5,6 +5,8 @@ import {sessionRouter} from "../session/session.router";
 import pinoHttp from "pino-http";
 import {logger} from "../logger";
 import http from "http";
+import {jwtTokenValidationMiddleware} from "./authentication.middleware";
+import {healthCheckRouter} from "../healthcheck/health.check.router";
 
 class ExpressServer {
 
@@ -18,8 +20,10 @@ class ExpressServer {
         app.use(helmet());
         app.use(express.json());
         app.use(pinoHttp({logger}));
+        app.use(jwtTokenValidationMiddleware);
         app.use("/v1/services", serviceRouter);
         app.use("/v1/sessions", sessionRouter);
+        app.use("/v1/healthcheck", healthCheckRouter);
 
         this.expressApp = app.listen(port, () => {
             logger.info(`Server started on port ${port}`);
@@ -39,7 +43,7 @@ class ExpressServer {
 
     private static getPort(): number {
         try {
-            return parseInt(process.env.SERVER_PORT as string, 10) || 8080;
+            return parseInt(process.env.PORT as string, 10) || 8080;
         } catch (error) {
             return 8080;
         }
